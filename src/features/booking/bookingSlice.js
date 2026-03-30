@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { fetchBookings, extractBookingsList } from './bookingThunk';
 import { createBooking } from './bookingCrudThunks';
-import { addMinutes, parseISO } from 'date-fns';
+import { addMinutes, isValid, parse, parseISO } from 'date-fns';
 
 const initialState = {
   byId: {},
@@ -10,6 +10,68 @@ const initialState = {
   error: null,
   backup: null,
   lastSyncedAt: null,
+};
+
+const normalizeId = (value, fallback = '') => {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+
+  return String(value);
+};
+
+const parseApiDateTime = (value) => {
+  if (!value) return null;
+
+  if (value instanceof Date) {
+    return isValid(value) ? value : null;
+  }
+
+  const source = String(value).trim();
+  const candidates = [
+    parseISO(source),
+    parse(source, 'yyyy-MM-dd HH:mm:ss', new Date()),
+    parse(source, 'yyyy-MM-dd HH:mm', new Date()),
+    parse(source, "yyyy-MM-dd'T'HH:mm:ss", new Date()),
+    parse(source, "yyyy-MM-dd'T'HH:mm", new Date()),
+    parse(source, 'dd-MM-yyyy HH:mm:ss', new Date()),
+    parse(source, 'dd-MM-yyyy HH:mm', new Date()),
+  ];
+
+  return candidates.find(isValid) || null;
+};
+
+const extractBookingItems = (booking) => {
+  const items =
+    booking?.booking_item ||
+    booking?.booking_items ||
+    booking?.items ||
+    booking?.bookingItems ||
+    [];
+
+  if (Array.isArray(items)) {
+    return items;
+  }
+
+  if (items && typeof items === 'object') {
+    return Object.values(items);
+  }
+
+  return [];
+};
+
+const extractRoomItem = (item) => {
+  const roomItems = item?.room_items || item?.roomItems || item?.rooms || [];
+
+  if (Array.isArray(roomItems)) {
+    return roomItems[0] || {};
+  }
+
+  if (roomItems && typeof roomItems === 'object') {
+    return Object.values(roomItems).find(Boolean) || {};
+  }
+
+  return {};
 };
 
 const bookingSlice = createSlice({
@@ -40,35 +102,53 @@ const bookingSlice = createSlice({
       const now = new Date().toISOString();
 
       safeBookings.forEach(booking => {
-        const items = booking.booking_item || {};
-        Object.values(items).forEach(item => {
-          if (!item || typeof item !== 'object' || !item.id) return;
-          incomingIds.add(item.id);
+        const items = extractBookingItems(booking);
+        items.forEach(item => {
+          if (!item || typeof item !== 'object') return;
+
+          const itemId = normalizeId(item.id || item.booking_item_id);
+          if (!itemId) return;
+
+          incomingIds.add(itemId);
           
-          if (item.id === editingId) return;
+          if (itemId === normalizeId(editingId)) return;
           if (state.lastSyncedAt && new Date(booking.updated_at || now) < new Date(state.lastSyncedAt)) return;
 
           const duration = parseInt(item.duration, 10) || 60;
+          const startDate = parseApiDateTime(
+            item.service_at || item.start_time || item.start_at || booking.service_at || booking.start_time
+          );
+          if (!startDate) return;
+
+          const roomItem = extractRoomItem(item);
+          const therapistId = normalizeId(
+            item.therapist_id || item.therapist?.id || booking.therapist_id,
+            'unassigned'
+          );
           const normalized = {
-            id: item.id,
-            bookingId: booking.id,
-            therapistId: item.therapist_id || "unassigned",
-            therapistName: item.therapist || "Unassigned",
-            startTime: item.service_at,
-            endTime: addMinutes(parseISO(item.service_at), duration).toISOString(),
+            id: itemId,
+            bookingId: normalizeId(booking.id || booking.booking_id),
+            customerId: normalizeId(item.customer_id || booking.customer_id || booking.customer?.id),
+            therapistId,
+            therapistName: item.therapist || item.therapist_name || booking.therapist_name || 'Unassigned',
+            startTime: startDate.toISOString(),
+            endTime: addMinutes(startDate, duration).toISOString(),
             duration,
-            status: booking.status === "No-show" ? "Cancelled" : (booking.status || 'Confirmed'),
-            service: item.service,
-            serviceId: item.service_id,
-            room: item.room_items?.[0]?.room_name || "",
-            roomId: item.room_items?.[0]?.room_id || "",
-            customer: item.customer_name,
+            status: booking.status === 'No-show' ? 'Cancelled' : (booking.status || 'Confirmed'),
+            service: item.service || item.service_name || booking.service_name || 'Service',
+            serviceId: normalizeId(item.service_id || item.service?.id),
+            room: roomItem.room_name || roomItem.name || '',
+            roomId: normalizeId(roomItem.room_id || roomItem.id),
+            customer: item.customer_name || booking.customer?.name || booking.customer_name || 'Unknown Client',
+            customerPhone: item.customer_phone || booking.customer_phone || '',
+            note: booking.note || item.note || '',
+            source: booking.source || '',
             updatedAt: booking.updated_at || now
           };
 
-          if (JSON.stringify(state.byId[item.id]) !== JSON.stringify(normalized)) {
-            state.byId[item.id] = normalized;
-            if (!state.allIds.includes(item.id)) state.allIds.push(item.id);
+          if (JSON.stringify(state.byId[itemId]) !== JSON.stringify(normalized)) {
+            state.byId[itemId] = normalized;
+            if (!state.allIds.includes(itemId)) state.allIds.push(itemId);
           }
         });
       });

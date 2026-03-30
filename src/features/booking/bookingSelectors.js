@@ -14,10 +14,13 @@ const selectBookingAllIds = state => state.booking.allIds;
 export const selectBookingsByTherapist = createSelector(
   [selectBookingById, selectBookingAllIds, (state, therapistId) => therapistId],
   (byId, allIds, therapistId) => {
+    const targetTherapistId = String(therapistId || 'unassigned');
+
     // 1. Strict filtering and sorting using Date objects
     const therapistEvents = allIds
       .map(id => byId[id])
-      .filter(b => b.therapistId === (therapistId || "unassigned"))
+      .filter((booking) => booking && String(booking.therapistId || 'unassigned') === targetTherapistId)
+      .filter((booking) => !Number.isNaN(new Date(booking.startTime).getTime()) && !Number.isNaN(new Date(booking.endTime).getTime()))
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
     const results = [];

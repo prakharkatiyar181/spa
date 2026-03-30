@@ -17,12 +17,17 @@ export const buildBookingListParams = (user, overrides = {}) => {
 
 export const extractBookingsList = (payload) => {
   const candidates = [
+    payload?.data?.data?.list?.bookings?.data,
     payload?.data?.data?.list?.bookings,
     payload?.data?.data?.list?.data,
+    payload?.data?.data?.bookings?.data,
     payload?.data?.data?.bookings,
+    payload?.data?.list?.bookings?.data,
     payload?.data?.list?.bookings,
     payload?.data?.list?.data,
+    payload?.data?.bookings?.data,
     payload?.data?.bookings,
+    payload?.list?.bookings?.data,
     payload?.data?.data?.list,
     payload?.data?.data,
     payload?.data?.list,

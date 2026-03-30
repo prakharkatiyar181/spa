@@ -1,33 +1,14 @@
 import React from 'react';
 
-const TherapistHeader = React.memo(({ therapist }) => {
-  const genderColor = therapist.gender === 'Female' ? '#EC4899' : '#3B82F6';
-  
+const TherapistHeader = React.memo(({ therapist, index }) => {
+  const genderClass = therapist.gender === 'Female' ? 'is-female' : therapist.gender === 'Male' ? 'is-male' : 'is-neutral';
+
   return (
-    <div className="therapist-header-item" style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      borderRight: '1px solid #E5E7EB', 
-      height: '60px', 
-      padding: '0 10px',
-      backgroundColor: '#FFF'
-    }}>
-      <div style={{ fontWeight: 600, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>
-        {therapist.name}
-      </div>
-      <div style={{ 
-        fontSize: '10px', 
-        fontWeight: 700, 
-        padding: '2px 8px', 
-        borderRadius: '99px', 
-        marginTop: '4px', 
-        border: `1px solid ${genderColor}`, 
-        color: genderColor,
-        textTransform: 'uppercase'
-      }}>
-        {therapist.gender}
+    <div className="therapist-header-item">
+      <span className={`therapist-header-item__badge ${genderClass}`}>{index + 1}</span>
+      <div className="therapist-header-item__copy">
+        <div className="therapist-header-item__name">{therapist.name}</div>
+        <div className={`therapist-header-item__meta ${genderClass}`}>{therapist.gender}</div>
       </div>
     </div>
   );

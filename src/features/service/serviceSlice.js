@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { format } from 'date-fns';
 import apiClient from '../../api/apiClient';
 
 const extractServiceCategories = (payload) => {
@@ -22,9 +23,20 @@ const extractServiceCategories = (payload) => {
 
 export const fetchServiceCategories = createAsyncThunk(
   'service/fetchCategories',
-  async (_, { rejectWithValue }) => {
+  async (overrides = {}, { getState, rejectWithValue }) => {
     try {
-      const response = await apiClient.get('/api/v1/service-category');
+      const user = getState().auth.user;
+      const response = await apiClient.get('/api/v1/service-category', {
+        params: {
+          pagination: 0,
+          panel: 'outlet',
+          outlet: overrides.outletId || user?.outlet_id || 1,
+          outlet_type: overrides.outletTypeId || user?.outlet_type_id || 1,
+          status: overrides.status ?? 1,
+          therapist: overrides.therapistId,
+          service_at: overrides.serviceAt || format(new Date(), 'dd-MM-yyyy HH:mm:ss'),
+        },
+      });
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);

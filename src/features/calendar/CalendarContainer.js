@@ -1,13 +1,38 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
+import { selectAuthUser } from '../auth/authSlice';
 import CalendarGrid from './CalendarGrid';
 
 const CalendarContainer = () => {
+  const user = useSelector(selectAuthUser);
+  const userInitials = `${user?.name?.[0] || ''}${user?.lastname?.[0] || ''}`.trim().toUpperCase() || 'U';
+  const navItems = ['Home', 'Therapists', 'Sales', 'Clients', 'Transactions', 'Reports'];
+
   return (
-    <div className="calendar-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden' }}>
-      <header style={{ height: '60px', padding: '0 20px', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', backgroundColor: '#FFF' }}>
-        <h1 style={{ fontSize: '18px', fontWeight: 600, color: '#111827' }}>SPA Booking System</h1>
+    <div className="calendar-shell">
+      <header className="calendar-shell__topbar">
+        <div className="calendar-shell__brand">Logo</div>
+        <nav className="calendar-shell__nav" aria-label="Primary">
+          {navItems.map((item) => (
+            <button
+              key={item}
+              type="button"
+              className={`calendar-shell__navItem ${item === 'Home' ? 'is-active' : ''}`}
+            >
+              {item}
+            </button>
+          ))}
+        </nav>
+        <div className="calendar-shell__actions">
+          <button type="button" className="calendar-shell__iconButton" aria-label="Notifications">
+            N
+          </button>
+          <div className="calendar-shell__avatar" aria-label={user?.name || 'User'}>
+            {userInitials}
+          </div>
+        </div>
       </header>
-      <main style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <main className="calendar-shell__content">
         <CalendarGrid />
       </main>
     </div>
