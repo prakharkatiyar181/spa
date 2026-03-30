@@ -1,7 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { FixedSizeList as List } from 'react-window';
-import { fetchBookings } from '../booking/bookingThunk';
+import { fetchBookings, buildBookingListParams, extractBookingsList } from '../booking/bookingThunk';
 import { selectBookingsByTherapist } from '../booking/bookingSelectors';
 import { fetchTherapists, selectAllTherapists } from '../therapist/therapistSlice';
 import { rescheduleBooking, rollback, mergeBookingsIncremental } from '../booking/bookingSlice';
@@ -61,19 +60,23 @@ const CalendarGrid = () => {
   const [dragState, setDragState] = useState(null);
 
   useEffect(() => {
-    dispatch(fetchTherapists());
+    if (!user?.outlet_id) return;
+
     dispatch(fetchBookings());
+    dispatch(fetchTherapists());
 
     const pollInterval = setInterval(async () => {
       try {
-        const response = await apiClient.get('/api/v1/bookings/outlet/booking/list');
-        const bookings = response.data?.data?.data?.list?.bookings || [];
+        const response = await apiClient.get('/api/v1/bookings/outlet/booking/list', {
+          params: buildBookingListParams(user),
+        });
+        const bookings = extractBookingsList(response.data);
         dispatch(mergeBookingsIncremental({ bookings, editingId: selectedBookingId }));
       } catch (e) {}
     }, POLLING_INTERVAL);
 
     return () => clearInterval(pollInterval);
-  }, [dispatch, selectedBookingId]);
+  }, [dispatch, selectedBookingId, user?.outlet_id]);
 
   const handleEditBooking = useCallback((id) => dispatch(openPanel(id)), [dispatch]);
   const handleCreateBooking = useCallback((tid, time) => setCreateData({ therapistId: tid, time }), []);
@@ -87,8 +90,8 @@ const CalendarGrid = () => {
     if (!dragState) return;
     const { booking, currentX, currentY } = dragState;
     const gridRect = containerRef.current.getBoundingClientRect();
-    const scrollLeft = gridScrollRef.current ? gridScrollRef.current.state.scrollLeft : 0;
-    const scrollTop = gridScrollRef.current ? gridScrollRef.current.state.scrollTop : 0;
+    const scrollLeft = gridScrollRef.current?.scrollLeft ?? 0;
+    const scrollTop = gridScrollRef.current?.scrollTop ?? 0;
 
     const xInGrid = currentX - gridRect.left - 80 + scrollLeft;
     const yInGrid = currentY - gridRect.top - 60 + scrollTop;
@@ -114,6 +117,17 @@ const CalendarGrid = () => {
   }, [dragState, therapists, dispatch, user]);
 
   const containerRef = useRef(null);
+  const handleGridScroll = useCallback((e) => {
+    const { scrollLeft, scrollTop } = e.currentTarget;
+
+    if (headerRef.current) {
+      headerRef.current.scrollLeft = scrollLeft;
+    }
+
+    if (timeColumnRef.current) {
+      timeColumnRef.current.scrollTop = scrollTop;
+    }
+  }, []);
 
   return (
     <div className="calendar-grid-wrapper" ref={containerRef} onPointerMove={e => dragState && setDragState(p => ({...p, currentX: e.clientX, currentY: e.clientY}))} onPointerUp={handlePointerUp} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', position: 'relative' }}>
@@ -130,17 +144,26 @@ const CalendarGrid = () => {
       </div>
       <div className="calendar-body-scroll" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <div className="time-column-scroll" ref={timeColumnRef} style={{ overflow: 'hidden' }}><TimeColumn /></div>
-        <List
+        <div
           ref={gridScrollRef}
-          height={window.innerHeight - 120}
-          itemCount={therapists.length}
-          itemSize={COLUMN_WIDTH}
-          layout="horizontal"
-          width={window.innerWidth - 80}
-          onScroll={({ scrollLeft }) => { if (headerRef.current) headerRef.current.scrollLeft = scrollLeft; }}
+          className="grid-viewport"
+          onScroll={handleGridScroll}
+          style={{ flex: 1, overflow: 'auto' }}
         >
-          {({ index, style }) => <TherapistColumn therapistId={therapists[index].id} style={style} onEditBooking={handleEditBooking} onCreateBooking={handleCreateBooking} onDragStart={handleDragStart} draggingId={dragState?.booking?.id} />}
-        </List>
+          <div style={{ display: 'flex', minHeight: '1440px', width: Math.max(therapists.length * COLUMN_WIDTH, 0) }}>
+            {therapists.map(therapist => (
+              <TherapistColumn
+                key={therapist.id}
+                therapistId={therapist.id}
+                style={{ width: COLUMN_WIDTH, flexShrink: 0 }}
+                onEditBooking={handleEditBooking}
+                onCreateBooking={handleCreateBooking}
+                onDragStart={handleDragStart}
+                draggingId={dragState?.booking?.id}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

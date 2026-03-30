@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { fetchBookings } from './bookingThunk';
-import { createBooking, updateBooking, cancelBooking, deleteBooking } from './bookingCrudThunks';
+import { fetchBookings, extractBookingsList } from './bookingThunk';
+import { createBooking } from './bookingCrudThunks';
 import { addMinutes, parseISO } from 'date-fns';
 
 const initialState = {
@@ -35,10 +35,11 @@ const bookingSlice = createSlice({
     },
     mergeBookingsIncremental: (state, action) => {
       const { bookings, editingId } = action.payload;
+      const safeBookings = Array.isArray(bookings) ? bookings : [];
       const incomingIds = new Set();
       const now = new Date().toISOString();
 
-      bookings.forEach(booking => {
+      safeBookings.forEach(booking => {
         const items = booking.booking_item || {};
         Object.values(items).forEach(item => {
           if (!item || typeof item !== 'object' || !item.id) return;
@@ -82,11 +83,19 @@ const bookingSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(fetchBookings.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
       .addCase(fetchBookings.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        const bookings = action.payload?.data?.data?.list?.bookings || [];
+        const bookings = extractBookingsList(action.payload);
         // REFACTOR: Shared logic call
         bookingSlice.caseReducers.mergeBookingsIncremental(state, { payload: { bookings, editingId: null } });
+      })
+      .addCase(fetchBookings.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
       })
       .addCase(createBooking.fulfilled, (state) => { state.status = 'succeeded'; });
   },

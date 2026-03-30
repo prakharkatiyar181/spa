@@ -1,9 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { closePanel, selectSelectedBookingId } from '../ui/uiSlice';
-import { updateBooking, cancelBooking, deleteBooking } from './bookingCrudThunks';
-import { fetchServiceCategories } from '../service/serviceSlice';
-import { fetchRooms } from '../room/roomSlice';
+import { updateBooking, cancelBooking } from './bookingCrudThunks';
 import { selectAllTherapists } from '../therapist/therapistSlice';
 import { format, parseISO } from 'date-fns';
 import './BookingSidePanel.css';

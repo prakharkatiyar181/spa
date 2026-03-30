@@ -1,6 +1,25 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import apiClient from '../../api/apiClient';
 
+const extractRoomList = (payload) => {
+  const candidates = [
+    payload?.data?.data?.list?.rooms,
+    payload?.data?.data?.rooms,
+    payload?.data?.list?.rooms,
+    payload?.data?.rooms,
+    payload?.data?.data?.list,
+    payload?.data?.data,
+    payload?.data?.list,
+    payload?.data,
+    payload?.list?.rooms,
+    payload?.rooms,
+    payload?.list,
+    payload,
+  ];
+
+  return candidates.find(Array.isArray) || [];
+};
+
 export const fetchRooms = createAsyncThunk(
   'room/fetchRooms',
   async (outletId, { rejectWithValue }) => {
@@ -19,7 +38,7 @@ const roomSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(fetchRooms.fulfilled, (state, action) => {
-      state.list = action.payload?.data || [];
+      state.list = extractRoomList(action.payload);
     });
   }
 });
