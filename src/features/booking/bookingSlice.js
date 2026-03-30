@@ -25,7 +25,8 @@ const bookingSlice = createSlice({
     },
     rescheduleBooking: (state, action) => {
       const { id, newStartTime, newTherapistId, newEndTime } = action.payload;
-      state.backup = { byId: { ...state.byId }, allIds: [...state.allIds] };
+      // PRODUCTION FIX: Deep copy backup to prevent mutation reference bugs
+      state.backup = { byId: JSON.parse(JSON.stringify(state.byId)), allIds: [...state.allIds] };
       if (state.byId[id]) {
         state.byId[id].startTime = newStartTime;
         state.byId[id].endTime = newEndTime;
@@ -83,8 +84,8 @@ const bookingSlice = createSlice({
     builder
       .addCase(fetchBookings.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        // Initial full load logic (reuses merge increment logic for simplicity)
         const bookings = action.payload?.data?.data?.list?.bookings || [];
+        // REFACTOR: Shared logic call
         bookingSlice.caseReducers.mergeBookingsIncremental(state, { payload: { bookings, editingId: null } });
       })
       .addCase(createBooking.fulfilled, (state) => { state.status = 'succeeded'; });

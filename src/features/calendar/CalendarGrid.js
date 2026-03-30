@@ -54,8 +54,8 @@ const CalendarGrid = () => {
   const selectedBookingId = useSelector(selectSelectedBookingId);
   
   const headerRef = useRef(null);
-  const scrollRef = useRef({ scrollLeft: 0, scrollTop: 0 });
-  const containerRef = useRef(null);
+  const gridScrollRef = useRef(null);
+  const timeColumnRef = useRef(null);
 
   const [createData, setCreateData] = useState(null);
   const [dragState, setDragState] = useState(null);
@@ -87,21 +87,24 @@ const CalendarGrid = () => {
     if (!dragState) return;
     const { booking, currentX, currentY } = dragState;
     const gridRect = containerRef.current.getBoundingClientRect();
-    const xInGrid = currentX - gridRect.left - 80 + scrollRef.current.scrollLeft;
-    const yInGrid = currentY - gridRect.top - 60 + scrollRef.current.scrollTop;
+    const scrollLeft = gridScrollRef.current ? gridScrollRef.current.state.scrollLeft : 0;
+    const scrollTop = gridScrollRef.current ? gridScrollRef.current.state.scrollTop : 0;
+
+    const xInGrid = currentX - gridRect.left - 80 + scrollLeft;
+    const yInGrid = currentY - gridRect.top - 60 + scrollTop;
 
     const therapistIndex = Math.max(0, Math.min(therapists.length - 1, Math.floor(xInGrid / COLUMN_WIDTH)));
     const newTherapistId = therapists[therapistIndex].id;
     const snappedMins = Math.round(Math.max(0, Math.min(1440 - booking.duration, yInGrid)) / SNAP_INTERVAL) * SNAP_INTERVAL;
     
-    const startTime = `${format(parseISO(booking.startTime), 'yyyy-MM-dd')}T${Math.floor(snappedMins/60).toString().padStart(2,'0')}:${(snappedMins%60).toString().padStart(2,'0')}:00`;
+    const datePart = format(parseISO(booking.startTime), 'yyyy-MM-dd');
+    const startTime = `${datePart}T${Math.floor(snappedMins/60).toString().padStart(2,'0')}:${(snappedMins%60).toString().padStart(2,'0')}:00`;
     const endTime = addMinutes(parseISO(startTime), booking.duration).toISOString();
 
     if (startTime !== booking.startTime || newTherapistId !== booking.therapistId) {
       dispatch(rescheduleBooking({ id: booking.id, newStartTime: startTime, newTherapistId, newEndTime: endTime }));
       const payload = {
-        company: user?.company_id || 1,
-        outlet: user?.outlet_id || 1,
+        company: user?.company_id || 1, outlet: user?.outlet_id || 1,
         items: [{ service: booking.serviceId || 1, start_time: startTime.replace('T', ' '), end_time: endTime.replace('T', ' '), duration: booking.duration, therapist: newTherapistId, room_segments: [{ room_id: booking.roomId || 1, duration: booking.duration }] }],
         service_at: startTime.replace('T', ' ')
       };
@@ -109,6 +112,8 @@ const CalendarGrid = () => {
     }
     setDragState(null);
   }, [dragState, therapists, dispatch, user]);
+
+  const containerRef = useRef(null);
 
   return (
     <div className="calendar-grid-wrapper" ref={containerRef} onPointerMove={e => dragState && setDragState(p => ({...p, currentX: e.clientX, currentY: e.clientY}))} onPointerUp={handlePointerUp} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', position: 'relative' }}>
@@ -121,11 +126,19 @@ const CalendarGrid = () => {
         </div>
       )}
       <div className="calendar-header-scroll" ref={headerRef} style={{ display: 'flex', overflow: 'hidden', marginLeft: '80px' }}>
-        {therapists.map(t => <div key={t.id} style={{ width: COLUMN_WIDTH, flexShrink: 0 }}><TherapistHeader therapist={t} /></div>)}
+        {therapists.map(t => <div key={t.id} style={{ width: COLUMN_WIDTH, flexShrink: 0 }}><TherapistHeader therapist={t} /></div>) || "Loading..."}
       </div>
       <div className="calendar-body-scroll" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <div className="time-column-scroll" style={{ overflow: 'hidden' }}><TimeColumn /></div>
-        <List height={window.innerHeight - 120} itemCount={therapists.length} itemSize={COLUMN_WIDTH} layout="horizontal" width={window.innerWidth - 80} onScroll={({ scrollLeft }) => { scrollRef.current.scrollLeft = scrollLeft; if (headerRef.current) headerRef.current.scrollLeft = scrollLeft; }}>
+        <div className="time-column-scroll" ref={timeColumnRef} style={{ overflow: 'hidden' }}><TimeColumn /></div>
+        <List
+          ref={gridScrollRef}
+          height={window.innerHeight - 120}
+          itemCount={therapists.length}
+          itemSize={COLUMN_WIDTH}
+          layout="horizontal"
+          width={window.innerWidth - 80}
+          onScroll={({ scrollLeft }) => { if (headerRef.current) headerRef.current.scrollLeft = scrollLeft; }}
+        >
           {({ index, style }) => <TherapistColumn therapistId={therapists[index].id} style={style} onEditBooking={handleEditBooking} onCreateBooking={handleCreateBooking} onDragStart={handleDragStart} draggingId={dragState?.booking?.id} />}
         </List>
       </div>
