@@ -1,0 +1,128 @@
+.side-panel-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: 2000;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.booking-side-panel {
+  width: 480px;
+  height: 100%;
+  background: #FFFFFF;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  animation: slideLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: 'Inter', sans-serif;
+}
+
+@keyframes slideLeft {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.panel-header {
+  padding: 24px;
+  border-bottom: 1px solid #F3F4F6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.close-panel-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #9CA3AF;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.detail-group {
+  margin-bottom: 24px;
+}
+
+.detail-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6B7280;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.detail-value {
+  font-size: 16px;
+  color: #111827;
+  font-weight: 500;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-confirmed { background: #DBEAFE; color: #1E40AF; }
+.status-cancelled { background: #F3F4F6; color: #4B5563; }
+.status-check-in { background: #FCE7F3; color: #9D174D; }
+
+.panel-footer {
+  padding: 24px;
+  border-top: 1px solid #F3F4F6;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-primary {
+  background: #111827;
+  color: #FFFFFF;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+
+.btn-outline-danger {
+  background: #FFFFFF;
+  color: #DC2626;
+  border: 1px solid #DC2626;
+  padding: 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+
+.edit-toggle-btn {
+  color: #3B82F6;
+  font-size: 14px;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+}

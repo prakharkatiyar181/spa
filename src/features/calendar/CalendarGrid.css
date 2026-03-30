@@ -1,0 +1,90 @@
+.calendar-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #fff;
+  overflow: hidden;
+}
+
+.calendar-header-wrapper {
+  display: flex;
+  height: 60px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.time-gutter-header {
+  width: 80px;
+  flex-shrink: 0;
+  border-right: 1px solid #e5e7eb;
+}
+
+.therapist-header-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-right: 1px solid #e5e7eb;
+  padding: 0 10px;
+  background-color: #fff;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.therapist-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  text-align: center;
+}
+
+.therapist-gender {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 99px;
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
+.calendar-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.time-column {
+  width: 80px;
+  flex-shrink: 0;
+  background-color: #f9fafb;
+  border-right: 1px solid #e5e7eb;
+  overflow-y: hidden;
+}
+
+.time-slot-label {
+  height: 60px; /* 1 hour */
+  display: flex;
+  justify-content: center;
+  padding-top: 4px;
+  font-size: 11px;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+  box-sizing: border-box;
+}
+
+.grid-viewport {
+  flex: 1;
+  overflow: auto !important;
+}
+
+.therapist-column {
+  position: relative;
+  height: 1440px; /* 24 hours * 60px */
+  border-right: 1px solid #f3f4f6;
+  background-image: linear-gradient(to bottom, #f3f4f6 1px, transparent 1px);
+  background-size: 100% 15px; /* 15 min grid lines */
+}
